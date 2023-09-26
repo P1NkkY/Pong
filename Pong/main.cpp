@@ -6,6 +6,7 @@
 #include <sstream>
 
 int score = 0;
+int lives = -1;
 
 
 class Platform
@@ -67,7 +68,7 @@ public:
 private:
     sf::RectangleShape platfObject;
     sf::Vector2f platPosition;
-    int platSpeed = 4;
+    int platSpeed = 15;
 };
 
 class Ball
@@ -77,18 +78,15 @@ public:
     {
         ballPosition.x = x;
         ballPosition.y = y;
-
-        ballObject.setSize(sf::Vector2f(40, 40));
+        
+        //ballObject.setSize(sf::Vector2f(40, 40));
+        ballObject.setRadius(RADIUS);
         ballObject.setPosition(ballPosition);
         ballObject.setFillColor(sf::Color::Green);
     }
-    
-    bool endTheGame()
-    {
-        return end;
-    }
 
-    sf::RectangleShape getBallObject() {
+    sf::CircleShape getBallObject() 
+    {
         return ballObject;
     }
 
@@ -106,6 +104,7 @@ public:
     {
         ballPosition.y -= (ballVelocityY * 1);
         ballVelocityY *= -1;
+        score++;
     }
 
     void update()
@@ -116,13 +115,27 @@ public:
         ballObject.setPosition(ballPosition);
     }
 
+    void stop()
+    {
+        ballVelocityX = 0;
+        ballVelocityY = 0;
+    }
+
+    void start()
+    {
+        ballVelocityX = 10;
+        ballVelocityY = 10;
+    }
+
     void logic()
     {
         // Ball collision with horizontal walls
-        if (ballPosition.x + 2 * RADIUS == WIDTH || ballPosition.x == 0)
+        if (ballPosition.x + 2 * RADIUS >= WIDTH || ballPosition.x <= 0) {
             ballVelocityX *= -1;
-        if (ballPosition.y + 2 * RADIUS == HEIGHT || ballPosition.y == 0)
+        }
+        if (ballPosition.y + 2 * RADIUS >= HEIGHT || ballPosition.y <= 0) {
             ballVelocityY *= -1;
+        }
         std::cout << ballPosition.y << std::endl;
         // Ball collision with down wall
         if (ballPosition.y + 2*RADIUS >= HEIGHT)
@@ -130,16 +143,18 @@ public:
             end = true;
             ballPosition.x = WIDTH / 2;
             ballPosition.y = HEIGHT / 2;
-            score++;
+
             if (rand() % 2 == 1) ballVelocityY *= -1;
             if (rand() % 2 == 2) ballVelocityX *= -1;
+            lives--;
         }
     }
 private:
-    sf::RectangleShape ballObject;
+    //sf::RectangleShape ballObject;
+    sf::CircleShape ballObject;
     sf::Vector2f ballPosition;
-    int ballVelocityX = 2;
-    int ballVelocityY = 2;
+    double ballVelocityX = 3;
+    double ballVelocityY = 3;
     bool end = false;
 };
 
@@ -166,40 +181,88 @@ int main()
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
                 platform.moveRight();
             }
-            /*
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
-                platform.moveUp();
-            }
-            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
-                platform.moveDown();
-            }
-            */
-
         }
         if (ball.getBallFloatRect().intersects(platform.getPlatFloatRect()))
             ball.rebound();
 
-        // Load a sprite to display
+        // Load the sprite to display
         sf::Texture texture;
         if (!texture.loadFromFile("Texture.jpg"))
             return EXIT_FAILURE;
         sf::Sprite sprite(texture);
-        
-        //! Display
+
+        //! Score message
+        std::stringstream ss;
+        ss << "Score: " << score;
+        sf::Text scoreMessage;
+        sf::Font fontScore;
+        fontScore.loadFromFile("Nexa Light.otf");
+        scoreMessage.setFont(fontScore);
+        scoreMessage.setCharacterSize(30);
+        scoreMessage.setFillColor(sf::Color::White);
+        scoreMessage.setString(ss.str());
+
+        // Start message
+        std::stringstream sm;
+        sm << "           Welcome to the game.\n Press the button to start the game.";
+        sf::Text startMessage;
+        sf::Font fontStart;
+        fontStart.loadFromFile("Nexa Light.otf");
+        startMessage.setFont(fontStart);
+        startMessage.setCharacterSize(30);
+        startMessage.setFillColor(sf::Color::White);
+        startMessage.setPosition(WIDTH / 2 - 230, HEIGHT / 2 - 55);
+        startMessage.setString(sm.str());
+
+        // End message
+        std::stringstream pm;
+        pm << "Your score is " << score;
+        sf::Text endMessage;
+        sf::Font fontp;
+        fontp.loadFromFile("Nexa Light.otf");
+        endMessage.setFont(fontp);
+        endMessage.setCharacterSize(30);
+        endMessage.setFillColor(sf::Color::White);
+        endMessage.setPosition(WIDTH / 2 - 110, HEIGHT / 2 - 50);
+        endMessage.setString(pm.str());
+
+
         ball.logic();
         ball.update();
 
         platform.update();
 
         window.clear();
-        window.draw(sprite);
         
-        if (ball.endTheGame())
-            system("pause");
-
-        window.draw(ball.getBallObject());
-        window.draw(platform.getPlatObject());
-        //std::this_thread::sleep_for(std::chrono::microseconds(1));
+        if (lives == -1) {
+            ball.stop();
+            window.draw(sprite);
+            window.draw(startMessage);
+            if (event.type == event.KeyPressed) {
+                lives = 1;
+                score = 0;
+                ball.start();
+                window.clear();
+                window.draw(sprite);
+            }
+        }
+        else if (lives == 0) {
+            window.clear();
+            window.draw(sprite);
+            window.draw(endMessage);
+            ball.stop();
+            if (event.type == event.KeyPressed) {
+                lives = 1;
+                score = 0;
+                ball.start();
+            }
+        }
+        else {
+            window.draw(sprite);
+            window.draw(ball.getBallObject());
+            window.draw(platform.getPlatObject());
+            window.draw(scoreMessage);
+        }
         window.display();
     }
     return 0;

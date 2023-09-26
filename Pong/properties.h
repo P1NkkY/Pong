@@ -6,4 +6,4 @@
 #define HEIGHT 600
 #define widthPlatform 120
 #define heightPlatform 20
-#define RADIUS 20
+#define RADIUS 10

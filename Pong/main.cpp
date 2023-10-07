@@ -40,35 +40,23 @@ public:
     {
         platfObject.setPosition(platPosition);
     }
-
-    void moveLeft() 
+    
+    void movePlatform(int direction)
     {
-        platPosition.x -= platSpeed;
-        if (platPosition.x < 0) platPosition.x = 0;
-    }
-
-    void moveRight() 
-    {
-        platPosition.x += platSpeed;
-        if (platPosition.x + widthPlatform > WIDTH) platPosition.x = WIDTH - widthPlatform;
-    }
-
-    void moveUp()
-    {
-        platPosition.y -= platSpeed;
-        if (platPosition.y < 0) platPosition.y = 0;
-    }
-
-    void moveDown()
-    {
-        platPosition.y += 4;
-        if (platPosition.y + heightPlatform > HEIGHT) platPosition.y = HEIGHT - heightPlatform;
+        if (direction == 1) {
+            platPosition.x += platSpeed;
+            if (platPosition.x + widthPlatform > WIDTH) platPosition.x = WIDTH - widthPlatform;
+        }
+        else if (direction == -1) {
+            platPosition.x -= platSpeed;
+            if (platPosition.x < 0) platPosition.x = 0;
+        }
     }
     
 private:
     sf::RectangleShape platfObject;
     sf::Vector2f platPosition;
-    int platSpeed = 15;
+    int platSpeed = 4;
 };
 
 class Ball
@@ -101,9 +89,13 @@ public:
     }
 
     void rebound()
-    {
+    { 
         ballPosition.y -= (ballVelocityY * 1);
         ballVelocityY *= -1;
+        ballVelocityY += -0.25; // Up the velocity
+        ballVelocityX *= rand() % 2 == 0 ? 1 : -1;
+        // std::cout << ballVelocityX << std::endl;
+        // std::cout << ballVelocityY << std::endl;
         score++;
     }
 
@@ -123,8 +115,8 @@ public:
 
     void start()
     {
-        ballVelocityX = 10;
-        ballVelocityY = 10;
+        ballVelocityX = 3;
+        ballVelocityY = 3;
     }
 
     void logic()
@@ -136,7 +128,7 @@ public:
         if (ballPosition.y + 2 * RADIUS >= HEIGHT || ballPosition.y <= 0) {
             ballVelocityY *= -1;
         }
-        std::cout << ballPosition.y << std::endl;
+        // std::cout << ballPosition.y << std::endl;
         // Ball collision with down wall
         if (ballPosition.y + 2*RADIUS >= HEIGHT)
         {
@@ -153,8 +145,8 @@ private:
     //sf::RectangleShape ballObject;
     sf::CircleShape ballObject;
     sf::Vector2f ballPosition;
-    double ballVelocityX = 3;
-    double ballVelocityY = 3;
+    double ballVelocityX = 0;
+    double ballVelocityY = 0;
     bool end = false;
 };
 
@@ -167,6 +159,7 @@ int main()
     // creating objects
     Ball ball(100, 100);
     Platform platform(300, 540);
+    int direction = 0;
 
     while (window.isOpen())
     {
@@ -176,10 +169,12 @@ int main()
             if (event.type == sf::Event::Closed)
                 window.close();
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
-                platform.moveLeft();
+                direction = -1;
+                // platform.moveLeft();
             }
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
-                platform.moveRight();
+                direction = 1;
+                // platform.moveRight();
             }
         }
         if (ball.getBallFloatRect().intersects(platform.getPlatFloatRect()))
@@ -226,10 +221,10 @@ int main()
         endMessage.setPosition(WIDTH / 2 - 110, HEIGHT / 2 - 50);
         endMessage.setString(pm.str());
 
-
         ball.logic();
         ball.update();
 
+        platform.movePlatform(direction);
         platform.update();
 
         window.clear();
